@@ -9,7 +9,7 @@ export default function Home() {
 
   // connect wallet to keep track on whether the user's wallet is connected.
 
-  const [walletConnect, setWalletConnected] = useState(false);
+  const [walletConnected, setWalletConnected] = useState(false);
 
   // leading is set to true when we are waiting for a transaction to get mined
 
@@ -90,8 +90,77 @@ export default function Home() {
   }
 
   /*
-  returns a provider 
+  returns a provider or signer object representing the Ethereum RPC Without the signing capabilities
+
+  a provider need to interact with the blockchain - reading transactions , reading balances, reading state
+  a signer is a special type of provider used in case a writer transactions needs to be made to the blockchain which involves the connected acount
+
+
   */
+
+  const getProviderOrSigner = async (needsigner = false) => {
+    // connect to metamask
+    // since we store 'web3modal'  as a reference we need to acces the 'current' value to get acces to the underlying object
+    const provider = await web3ModalRef.current.connect();
+    const web3Provider = new providers.web3Provider(provider);
+    // if user is not connected to the Mumbai network , let them know and throw an error
+    const { chainId } = await web3Provider.getNetwork();
+    if (chianId !== 80001) {
+      window.alert("Change the network to Mumbai");
+      throw new Error("Change the network to Mumbai");
+
+    }
+    if (needSigner) {
+      const signer = web3Provider.getSigner();
+      return signer;
+    }
+    return web3Provider;
+  };
+
+  // useEffects are used to react to changes in state of the website
+
+  // the array at the end of the function call represents what statechanges will trigger this effect
+  // in this case, whenever the value of ' walletconnected' changes this effect will be called.
+
+  useEffect(() => {
+    // if wallet is not connected , create a new instance of web3Modal and connec the MetaMask wallet
+    if (!walletConnected) {
+      // assign the web3Modal class to the reference object by setting it's 'current' value
+
+      // the 'current' value is persisted throughout as long as this page in open
+      web3ModalRef.current = new web3ModalRef({
+        network: "mumbai",
+        providerOptions: {},
+        disableInjectedProvider: false,
+        
+      })
+
+      connectWallet();
+      getTokenIdsMinted();
+
+      // set an interval to get the number of token Ids minted every 5 seconds
+
+      setInterval(async function (){
+        await getTokenIdsMinted();
+
+      }, 5 * 1000);
+    }
+  }, [walletConnected]
+  )
+  
+  // render button : returns a button based on the state of the dapp
+
+  const renderButton = () => {
+    // if wallet is connected , return a button which allows to connect their wallet
+
+    if (!walletConnected) {
+      return (
+        <button onClick={connectWallet} className={styles.button}> Connect your wallet</button>
+      )
+    }
+  }
+
+
   
 
 
